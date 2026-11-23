@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>93 Space Yogyakarta | Manajemen Tim</title>
+<style>
+:root{--ink:#111;--muted:#777;--line:#e5e5e5;--paper:#fff;--soft:#f6f6f6}
+*{box-sizing:border-box}body{margin:0;background:#f2f2f2;color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:20px}.top{background:#111;color:#fff;padding:22px;border-radius:16px;display:flex;justify-content:space-between;gap:15px;align-items:center}
+.brand{font-size:12px;letter-spacing:3px;color:#bbb}.top h1{margin:4px 0 0;font-size:25px}.tag{border:1px solid #555;border-radius:30px;padding:8px 12px;font-size:12px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}nav button.active{background:#111;color:#fff;border-color:#111}button,.btn{border:1px solid #111;background:#111;color:#fff;padding:10px 14px;border-radius:9px;font-weight:600;cursor:pointer}button.secondary{background:#fff;color:#111;border-color:#ddd}button:active{transform:translateY(1px)}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}.card h2{font-size:17px;margin:0 0 14px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.stat small{display:block;color:var(--muted)}.stat strong{font-size:25px}
+label{display:block;font-size:12px;color:#666;margin-bottom:5px}input,select{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;font:inherit;color:#111}
+.row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}.row.three{grid-template-columns:repeat(3,1fr)}.note{font-size:12px;color:#777;margin-top:8px}.actions{display:flex;gap:8px;flex-wrap:wrap}.clock{font-size:34px;font-weight:700;letter-spacing:-1px;margin:8px 0}.pill{display:inline-block;background:#eee;padding:4px 9px;border-radius:20px;font-size:12px}
+.monthbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}.monthbar strong{font-size:18px}.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.weekday{text-align:center;color:#777;font-size:11px;padding:6px 0}.day{min-height:68px;border:1px solid #eee;border-radius:8px;padding:6px;background:#fff;cursor:pointer;font-size:12px}.day.blank{background:#fafafa;cursor:default}.day.selected{border:2px solid #111;padding:5px}.day .num{font-weight:700}.day .assign{display:block;margin-top:5px;color:#555;font-size:10px;overflow-wrap:anywhere}.day.today{background:#f3f3f3}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 7px;border-bottom:1px solid #eee}th{color:#777;font-weight:600;font-size:11px} .tablewrap{overflow:auto}.empty{color:#888;text-align:center;padding:18px}.footer{color:#888;font-size:11px;text-align:center;padding:10px}
+@media(max-width:760px){.wrap{padding:12px}.grid{grid-template-columns:1fr}.top{padding:18px}.top h1{font-size:22px}.stats{gap:7px}.stat{padding:10px}.stat strong{font-size:22px}.day{min-height:58px;padding:4px}.day.selected{padding:3px}.row.three{grid-template-columns:1fr 1fr}.calendar{gap:3px}}
+
+#profileAccessCard{border-color:#cfcfcf}#profileAccessCard .pill{background:#111;color:#fff}
+.staff-hidden{display:none!important}
+#profile ul{padding-left:20px;color:#555}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div><div class="brand">93 SPACE · YOGYAKARTA</div><h1>Manajemen Tim</h1></div></header>
+<nav><button onclick="showSection('attendance')">Absensi Hari Ini</button><button class="secondary" onclick="showSection('schedule')">Kalender Jadwal</button><button class="secondary" onclick="showSection('settings')">Aturan Shift & Karyawan</button><button class="secondary" onclick="showSection('requests')">Status & Lembur</button><button class="secondary" onclick="showSection('payroll')">Pendapatan & SP</button><button class="secondary" onclick="showSection('profile')">Profil Saya</button></nav>
+<div class="card" id="profileAccessCard">
+  <h2>Profil & akses</h2>
+  <div class="row">
+    <div><label>Masuk sebagai</label><select id="profileRole"><option value="pic">PIC · Operasional</option><option value="staff">Staff</option></select></div>
+    <div id="profileStaffWrap"><label>Profil staff</label><select id="profileStaff"></select></div>
+  </div>
+  <div class="actions"><button onclick="applyProfile()">Terapkan profil</button><span class="pill" id="activeProfileBadge">Profil aktif: PIC</span></div>
+  <p class="note">Mode akses prototype untuk menguji tampilan PIC dan Staff. Data masih tersimpan lokal di browser; pemilihan profil ini belum merupakan autentikasi akun yang aman.</p>
+</div>
+
+<section id="attendance">
+<div class="stats"><div class="stat"><small>Hadir hari ini</small><strong id="present">0</strong></div><div class="stat"><small>Belum check-in</small><strong id="pending">0</strong></div><div class="stat"><small>Terlambat</small><strong id="late">0</strong></div></div>
+<div class="grid">
+<div class="card"><h2>Check-in / Check-out</h2><div class="row"><div><label>Nama karyawan</label><select id="attEmployee"></select></div><div><label>Shift hari ini</label><select id="attShift"><option value="morning">Pagi</option><option value="middle">Middle</option><option value="evening">Sore</option></select></div></div>
+<div class="clock" id="clock">--:--:--</div><div class="note" id="shiftInfo"></div><br><div class="actions"><button onclick="checkIn()">Check-in</button><button class="secondary" onclick="checkOut()">Check-out</button></div><p class="note">Check-in dan check-out disimpan di browser/perangkat ini. Check-out sebelum jam selesai shift wajib mendapat persetujuan PIC.</p></div>
+<div class="card"><h2>Ringkasan hari ini</h2><p class="note" id="todayLateSummary">Rekap keterlambatan akan tampil di sini.</p><div id="todaySummary" class="empty">Belum ada data absensi.</div></div>
+</div>
+<div class="card"><h2>Riwayat absensi</h2><div class="actions" style="margin-bottom:12px"><button class="secondary" onclick="exportCSV()">Export CSV</button><button class="secondary" onclick="clearToday()">Hapus data hari ini</button></div><div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Nama</th><th>Shift</th><th>Masuk</th><th>Selfie masuk</th><th>Pulang</th><th>Selfie pulang</th><th>Menit telat</th><th>Status</th></tr></thead><tbody id="attendanceRows"></tbody></table></div></div>
+</section>
+<section id="schedule" style="display:none">
+<div class="card"><h2>Kalender jadwal bulanan</h2><div class="monthbar"><button class="secondary" onclick="changeMonth(-1)">‹</button><strong id="monthTitle"></strong><button class="secondary" onclick="changeMonth(1)">›</button></div><div class="calendar" id="calendar"></div><p class="note">Pilih tanggal pada kalender, lalu atur jadwal karyawan di panel bawah.</p></div>
+<div class="card"><h2>Atur jadwal tanggal terpilih</h2><div class="row three"><div><label>Tanggal</label><input id="schedDate" type="date"></div><div><label>Karyawan</label><select id="schedEmployee"></select></div><div><label>Shift</label><select id="schedShift"><option value="morning">Pagi</option><option value="middle">Middle</option><option value="evening">Sore</option><option value="off">Libur</option></select></div></div><div class="actions"><button onclick="saveSchedule()">Simpan jadwal</button><button class="secondary" onclick="copyNextMonth()">Salin jadwal bulan ini ke bulan depan</button></div><p class="note">Salin jadwal akan menyalin pola tanggal yang sama ke bulan berikutnya dan mengganti jadwal yang sudah ada pada tanggal tersebut.</p></div>
+</section>
+<section id="settings" style="display:none">
+<div class="grid"><div class="card"><h2>Atur jam shift</h2><div id="shiftSettings"></div><div class="row"><div><label>Toleransi terlambat (menit)</label><input id="grace" type="number" min="0" value="5"></div><div style="display:flex;align-items:end"><button onclick="saveSettings()">Simpan aturan shift</button></div></div></div>
+<div class="card"><h2>Tambah karyawan</h2><div class="row"><div><label>Nama karyawan</label><input id="newEmployee" placeholder="Nama lengkap"></div><div style="display:flex;align-items:end"><button onclick="addEmployee()">Tambah</button></div></div><div id="employeeList" class="note"></div><p class="note">Untuk menghapus nama, tekan tombol × di samping nama.</p></div></div>
+<div class="card"><h2>Informasi pengaturan</h2><p class="note">Atur jam kerja, toleransi keterlambatan, dan daftar karyawan sesuai kebutuhan operasional 93 Space. Pengaturan yang disimpan akan menjadi acuan untuk absensi dan penjadwalan. Data tersimpan di browser/perangkat ini, sehingga belum otomatis tersinkron ke perangkat lain.</p></div>
+</section>
+
+<section id="requests" style="display:none">
+<div class="card"><h2>Rekap bulanan</h2><div class="row"><div><label>Bulan</label><input type="month" id="recMonth"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="renderMonthly()">Tampilkan</button></div></div><div id="monthlySummary" class="note"></div><h3>Rekap per karyawan</h3><div class="tablewrap"><table><thead><tr><th>Nama</th><th>Jadwal</th><th>Hadir</th><th>Telat (hari)</th><th>Menit telat</th><th>Lembur</th><th>Libur</th><th>Izin</th><th>Sakit</th><th>Alpha</th></tr></thead><tbody id="employeeMonthlyRows"></tbody></table></div><h3>Detail absensi harian</h3><div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Nama</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Menit telat</th></tr></thead><tbody id="monthlyRows"></tbody></table></div></div>
+<div class="grid">
+<div class="card"><h2>Pengajuan izin / sakit</h2><div class="row"><div><label>Karyawan</label><select id="reqEmployee"></select></div><div><label>Jenis</label><select id="reqType"><option value="izin">Izin</option><option value="sakit">Sakit</option></select></div></div><div class="row"><div><label>Tanggal</label><input type="date" id="reqDate"></div><div><label>Catatan</label><input id="reqNote" placeholder="Opsional"></div></div><button onclick="submitRequest()">Ajukan</button></div>
+<div class="card"><h2>Tukar jadwal</h2><div class="row"><div><label>Karyawan A</label><select id="swapFrom"></select></div><div><label>Karyawan B</label><select id="swapTo"></select></div></div><div class="row"><div><label>Tanggal</label><input type="date" id="swapDate"></div><div><label>Catatan</label><input id="swapNote" placeholder="Opsional"></div></div><button onclick="submitSwap()">Ajukan tukar</button></div></div>
+<div class="card"><h2>Persetujuan admin</h2><div id="pendingRequests" class="note"></div></div>
+<div class="card"><h2>GPS dan radius</h2><p class="note">Tentukan titik lokasi 93 Space. Alamat Google Maps membantu menemukan tempat, tetapi titik absensi disimpan sebagai koordinat latitude dan longitude.</p><div class="row"><div><label>Alamat 93 Space (Google Maps)</label><input id="gpsAddress" placeholder="Masukkan alamat 93 Space"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="openGoogleMaps()">Cari di Google Maps</button></div></div><div class="row"><div><label>Latitude</label><input id="gpsLatInput" type="number" step="any" placeholder="-7.xxxxxx"></div><div><label>Longitude</label><input id="gpsLonInput" type="number" step="any" placeholder="110.xxxxxx"></div></div><p class="note">Di Google Maps, tekan lama titik yang tepat, lalu salin angka koordinat yang muncul. Tempelkan di atas.</p><div class="row"><div><label>Radius (meter)</label><input id="gpsRadius" type="number" min="10" max="5000" value="100"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="setShopLocation()">Gunakan lokasi perangkat ini</button></div></div><div class="actions"><button onclick="saveGpsSettings()">Simpan titik & radius</button></div><div id="gpsStatus" class="note"></div></div>
+<div class="card"><h2>Lembur / overtime</h2><div class="row"><div><label>Karyawan</label><select id="otEmployee"></select></div><div><label>Tanggal</label><input type="date" id="otDate"></div></div><div class="row"><div><label>Mulai</label><input type="time" id="otStart"></div><div><label>Selesai</label><input type="time" id="otEnd"></div></div><div class="row"><div><label>Waktu lembur</label><select id="otKind"><option value="before">Sebelum shift</option><option value="after">Setelah shift</option></select></div><div><label>Catatan</label><input id="otNote" placeholder="Opsional"></div></div><button onclick="saveOvertime()">Simpan lembur</button><div id="otSummary" class="note"></div></div>
+</section>
+
+<section id="payroll" style="display:none">
+<div class="card"><h2>Pengaturan kontrak & pendapatan harian</h2><p class="note">Nominal ditampilkan dalam rupiah. Nilai awal gaji pokok Rp70.000/hari untuk semua kontrak sebagai nilai sementara yang bisa kamu ubah; benefit mengikuti jenis kontrak.</p>
+<div class="tablewrap"><table><thead><tr><th>Kontrak</th><th>Durasi</th><th>Gaji pokok/hari (Rp)</th><th>Uang makan/hari (Rp)</th><th>Transport/hari (Rp)</th></tr></thead><tbody id="contractRates"></tbody></table></div><button onclick="saveContractRates()">Simpan nominal kontrak</button></div>
+<div class="card"><h2>Atur kontrak karyawan</h2><div class="row"><div><label>Karyawan</label><select id="contractEmployee"></select></div><div><label>Jenis kontrak</label><select id="contractType"><option value="probation">Probation · 3 bulan</option><option value="six">Kontrak · 6 bulan</option><option value="year">Kontrak · 1 tahun</option></select></div></div><button onclick="saveEmployeeContract()">Simpan kontrak karyawan</button><div id="employeeContracts" class="note"></div></div>
+<div class="card"><h2>Rekap pendapatan bulanan</h2><p class="note">Untuk pengujian, kamu bisa membuat data simulasi acak bulan yang dipilih. Data simulasi diberi tanda dan dapat dihapus tanpa menghapus data absensi asli.</p><div class="actions" style="margin-bottom:12px"><button onclick="createDemoRandomData()">Buat sample data lengkap</button><button class="secondary" onclick="removeDemoRandomData()">Hapus data simulasi</button></div><div class="row"><div><label>Bulan</label><input type="month" id="payMonth"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="renderPayroll()">Tampilkan rekap</button></div></div><div class="tablewrap"><table><thead><tr><th>Karyawan</th><th>Kontrak</th><th>Hari hadir</th><th>Gaji pokok</th><th>Benefit</th><th>Denda SP</th><th>Total bersih*</th></tr></thead><tbody id="payrollRows"></tbody></table></div><div id="demoSampleSummary" class="note" style="margin-top:12px"></div><p class="note">*Data sample untuk uji alur. Lembur direkap dalam jam, belum ditambahkan ke nominal gaji karena tarif lembur belum ditentukan.</p></div>
+<div class="card"><h2>Pengaturan denda surat peringatan (SP)</h2><div class="row three"><div><label>SP 1 · Denda (Rp)</label><input id="fineSP1" type="number" min="0"></div><div><label>SP 2 · Denda (Rp)</label><input id="fineSP2" type="number" min="0"></div><div><label>SP 3 · Denda (Rp)</label><input id="fineSP3" type="number" min="0"></div></div><button onclick="saveFineRates()">Simpan nominal denda</button><p class="note">Nominal SP 1 awal Rp150.000; SP 2 dan SP 3 awal Rp0 sampai kamu mengaturnya.</p></div>
+<div class="card"><h2>Catat pelanggaran / SP</h2><div class="row three"><div><label>Karyawan</label><select id="violationEmployee"></select></div><div><label>Tanggal</label><input type="date" id="violationDate"></div><div><label>Jenis SP</label><select id="violationLevel"><option value="1">SP 1</option><option value="2">SP 2</option><option value="3">SP 3</option></select></div></div><div class="row"><div><label>Deskripsi pelanggaran</label><input id="violationNote" placeholder="Contoh: pelanggaran SOP"></div><div><label>Denda saat dicatat (Rp)</label><input id="violationAmount" type="number" min="0"></div></div><button onclick="addViolation()">Simpan pelanggaran</button><p class="note">Nominal otomatis mengikuti pengaturan SP, tetapi bisa kamu sesuaikan sebelum menyimpan.</p></div>
+<div class="card"><h2>Riwayat pelanggaran & denda</h2><div class="row"><div><label>Filter bulan</label><input type="month" id="violationMonth"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="renderViolations()">Tampilkan</button></div></div><div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Karyawan</th><th>SP</th><th>Pelanggaran</th><th>Denda</th><th></th></tr></thead><tbody id="violationRows"></tbody></table></div></div>
+<div class="card"><h2>Privasi data</h2><p class="note">Modul ini berada di tampilan admin prototipe. Karena data masih tersimpan di localStorage browser dan belum ada login/server, data pendapatan dan denda belum benar-benar terlindungi dari orang yang membuka website di perangkat yang sama. Jangan gunakan untuk data payroll sensitif sebelum ditambahkan autentikasi admin dan database server.</p></div>
+</section>
+<div id="cameraModal" style="display:none;position:fixed;inset:0;background:#000c;z-index:99;padding:16px;overflow:auto"><div style="max-width:500px;margin:20px auto;background:white;border-radius:14px;padding:16px"><h2 id="cameraTitle">Selfie check-in</h2><video id="cameraVideo" autoplay playsinline style="width:100%;background:#111;border-radius:8px"></video><canvas id="cameraCanvas" style="display:none"></canvas><p id="cameraMsg" class="note">Izinkan kamera, lalu ambil foto.</p><button onclick="captureSelfie()">Ambil selfie & verifikasi GPS</button><button class="secondary" onclick="cancelCamera()">Batal</button><img id="selfiePreview" style="display:none;width:100%;margin-top:10px"></div></div>
+\n
+<section id="profile" style="display:none">
+  <div class="card" id="picProfilePanel">
+    <h2>Profil PIC</h2>
+    <p><b>PIC Operasional · 93 Space Yogyakarta</b></p>
+    <p class="note">Mengelola jadwal tim, memantau absensi, memproses persetujuan, mengatur data karyawan, dan meninjau rekap payroll.</p>
+    <div class="stats"><div class="stat"><small>Staff terdaftar</small><strong id="picStaffCount">3</strong></div><div class="stat"><small>Pengajuan menunggu</small><strong id="picPendingCount">0</strong></div><div class="stat"><small>Hadir hari ini</small><strong id="picPresentCount">0</strong></div></div>
+    <h3>Tanggung jawab PIC</h3><ul><li>Kelola jadwal dan aturan shift</li><li>Setujui / tolak izin dan pulang lebih awal</li><li>Kelola overtime, status, dan data karyawan</li><li>Review rekap kehadiran dan payroll</li></ul>
+    <hr><h3>Undang Staff ke Management Team</h3>
+    <p class="note">Pilih staff yang ingin diundang. Undangan akan tercatat di inbox staff pada prototype ini.</p>
+    <div class="row"><div><label>Nama staff</label><select id="inviteStaffSelect"></select></div><div style="display:flex;align-items:end"><button onclick="create93StaffInvite()">Buat undangan</button></div></div>
+    <div id="picInviteList" class="note" style="margin-top:10px"></div>
+  </div>
+  <div class="card" id="staffProfilePanel" style="display:none">
+    <h2>Profil Staff</h2>
+    <p><b id="staffProfileName">Nama Staff</b> · Staff 93 Space Yogyakarta</p>
+    <p class="note">Akses pribadi untuk melihat jadwal, mencatat absensi, mengajukan izin / pulang lebih awal, dan memeriksa ringkasan kehadiran serta pendapatan sendiri.</p>
+    <div class="card" id="staffInviteInbox" style="margin:12px 0;padding:12px">
+      <h3>Undangan Management Team</h3>
+      <div id="staffInviteList" class="note">Belum ada undangan.</div>
+    </div>
+    <div class="row"><div><label>Bulan rekap</label><input type="month" id="staffProfileMonth"></div><div style="display:flex;align-items:end"><button class="secondary" onclick="renderStaffProfile()">Tampilkan rekap</button></div></div>
+    <div class="stats"><div class="stat"><small>Hadir</small><strong id="staffPresent">0</strong></div><div class="stat"><small>Telat</small><strong id="staffLate">0</strong></div><div class="stat"><small>Menit telat</small><strong id="staffLateMinutes">0</strong></div></div>
+    <div class="stats"><div class="stat"><small>Overtime</small><strong id="staffOT">0j</strong></div><div class="stat"><small>Libur</small><strong id="staffOff">0</strong></div><div class="stat"><small>Alpha</small><strong id="staffAlpha">0</strong></div></div>
+    <h3>Slip gaji ringkas</h3>
+    <div class="tablewrap"><table><tbody><tr><th>Gaji pokok</th><td id="staffBasePay">Rp0</td></tr><tr><th>Uang makan & transport</th><td id="staffBenefits">Rp0</td></tr><tr><th>Denda SP</th><td id="staffFine">Rp0</td></tr><tr><th>Total pendapatan</th><td><b id="staffNetPay">Rp0</b></td></tr></tbody></table></div>
+    <p class="note">Lembur ditampilkan dalam jam; nominal lembur belum masuk slip karena tarifnya belum ditentukan.</p>
+    <h3>Jadwal saya</h3><div id="staffScheduleList" class="note"></div>
+    <h3>Riwayat absensi saya</h3><div class="tablewrap"><table><thead><tr><th>Tanggal</th><th>Status</th><th>Masuk</th><th>Pulang</th><th>Telat</th></tr></thead><tbody id="staffAttendanceList"></tbody></table></div>
+  </div>
+</section>
+<div class="footer">93 SPACE · Attendance prototype V7 (3 staff + shift + GPS 50 m) · Payroll & PIC early checkout · Data tersimpan lokal di browser</div>
+</div>
+<script>
+const defaultState={employees:['Umar','Ahmad','Febri'],shifts:{morning:{label:'Pagi',start:'06:30',end:'15:00'},middle:{label:'Middle',start:'09:45',end:'18:00'},evening:{label:'Sore',start:'16:45',end:'01:00'}},grace:5,attendance:[],schedule:{}};
+let state=JSON.parse(localStorage.getItem('93space_attendance_v1')||'null')||defaultState;
+const requestedEmployees=['Umar','Ahmad','Febri'];
+state.employees=requestedEmployees.slice();
+state.shifts.morning={label:'Pagi',start:'06:30',end:'15:00'};
+state.shifts.middle={label:'Middle',start:'09:45',end:'18:00'};
+state.shifts.evening={label:'Sore',start:'16:45',end:'01:00'};
+
+if(!state.shifts.middle)state.shifts.middle=defaultState.shifts.middle;
+// V6.1 fix: legacy Safari Indonesian time strings may use dots (HH.MM.SS), causing NaN.
+state.attendance.forEach(r=>{if(r&&r.in&&r.shift&&state.shifts[r.shift]){let raw=String(r.in).replace(/[.]/g,':'),match=raw.match(/^(\d{1,2}:\d{2})(?::\d{2})?/);if(match)r.in=match[0];}});
+let selectedDate=new Date();let selectedDay=isoDate(new Date());
+function save(){localStorage.setItem('93space_attendance_v1',JSON.stringify(state));}
+// Recompute saved attendance records using the configured shift and grace period.
+state.attendance.forEach(r=>{if(r&&r.in&&r.shift&&state.shifts[r.shift]){let start=String(state.shifts[r.shift].start||'').replace(/[.]/g,':'),actual=String(r.in).replace(/[.]/g,':');let sm=start.split(':').map(Number),am=actual.split(':').map(Number);if(sm.length>=2&&am.length>=2&&sm.slice(0,2).every(Number.isFinite)&&am.slice(0,2).every(Number.isFinite)){r.lateMinutes=Math.max(0,am[0]*60+am[1]-(sm[0]*60+sm[1])-Number(state.grace||0));r.late=r.lateMinutes>0;}}});
+function isoDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function today(){return isoDate(new Date())}
+function timeNow(){let d=new Date();return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':')}
+function normalizeTime(t){if(typeof t!=='string')return '';let s=t.trim().replace(/[.]/g,':');let m=s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);if(!m)return '';return String(Number(m[1])).padStart(2,'0')+':'+m[2]}
+function minutes(t){let n=normalizeTime(t);if(!n)return NaN;let [h,m]=n.split(':').map(Number);return h*60+m}
+function getLateMinutes(r){if(!r||!r.in||!r.shift||!state.shifts[r.shift])return Number(r?.lateMinutes||0);let start=minutes(state.shifts[r.shift].start),actual=minutes(r.in),grace=Number(state.grace||0);if(!Number.isFinite(start)||!Number.isFinite(actual)){return Number.isFinite(Number(r.lateMinutes))?Number(r.lateMinutes):0}let value=Math.max(0,actual-start-grace);r.lateMinutes=value;r.late=value>0;return value}
+function shiftName(k){return state.shifts[k]?.label||'Libur'}
+function attendanceKey(date,name){return date+'|'+name}
+function currentRecord(date,name){return state.attendance.find(x=>x.date===date&&x.name===name)}
+function fillSelects(){['attEmployee','schedEmployee'].forEach(id=>{let el=document.getElementById(id),old=el.value;el.innerHTML='';state.employees.forEach(n=>{let o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o)});if(old&&state.employees.includes(old))el.value=old})}
+function renderSettings(){let box=document.getElementById('shiftSettings');box.innerHTML='';Object.entries(state.shifts).forEach(([k,s])=>{let div=document.createElement('div');div.className='row';div.innerHTML=`<div><label>${s.label} · Mulai</label><input type="time" id="${k}Start" value="${s.start}"></div><div><label>${s.label} · Selesai</label><input type="time" id="${k}End" value="${s.end}"></div>`;box.appendChild(div)});document.getElementById('grace').value=state.grace;document.getElementById('employeeList').innerHTML=state.employees.map(n=>`<span class="pill">${escapeHtml(n)} <button class="secondary" style="padding:0 5px;margin-left:4px" onclick="removeEmployee('${encodeURIComponent(n)}')">×</button></span>`).join(' ')||'Belum ada karyawan.'}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function addEmployee(){let n=document.getElementById('newEmployee').value.trim();if(!n)return alert('Isi nama karyawan dulu.');if(state.employees.includes(n))return alert('Nama sudah ada.');state.employees.push(n);document.getElementById('newEmployee').value='';save();fillSelects();renderSettings();renderAll()}
+function removeEmployee(encoded){let n=decodeURIComponent(encoded);if(!confirm('Hapus karyawan '+n+' dari daftar? Riwayat absensi lama tetap tersimpan.'))return;state.employees=state.employees.filter(x=>x!==n);save();fillSelects();renderSettings();renderAll()}
+function saveSettings(){Object.keys(state.shifts).forEach(k=>{state.shifts[k].start=document.getElementById(k+'Start').value||'09:00';state.shifts[k].end=document.getElementById(k+'End').value||'17:00'});state.grace=Math.max(0,Number(document.getElementById('grace').value)||0);save();renderAll();renderMonthly();alert('Aturan shift berhasil disimpan. Rekap keterlambatan diperbarui.')}
+function showSection(id){
+  const sections=['attendance','schedule','settings','requests','payroll'];
+  sections.forEach(x=>{const el=document.getElementById(x);if(el)el.style.display=x===id?'block':'none'});
+  document.querySelectorAll('nav button').forEach(btn=>{
+    const selected=btn.getAttribute('onclick')===`showSection('${id}')`;
+    btn.classList.toggle('active',selected);
+    btn.classList.toggle('secondary',!selected);
+  });
+  if(id==='schedule')renderCalendar();
+  if(id==='requests')renderRequests();
+  if(id==='payroll')renderPayroll();
+}
+function checkIn(){let name=document.getElementById('attEmployee').value;if(!name)return alert('Tambahkan karyawan terlebih dahulu.');let sh=document.getElementById('attShift').value,date=today(),r=currentRecord(date,name);if(!r){r={date,name,shift:sh,in:'',out:'',late:false};state.attendance.push(r)}if(r.in)return alert('Karyawan ini sudah check-in hari ini.');r.shift=sh;r.in=timeNow();let now=new Date(),nowM=now.getHours()*60+now.getMinutes(),start=minutes(state.shifts[sh].start);r.late=nowM>start+state.grace;save();renderAll();alert('Check-in tersimpan pukul '+r.in+(r.late?' · Terlambat':' · Tepat waktu'))}
+function checkOut(){let name=document.getElementById('attEmployee').value,r=currentRecord(today(),name);if(!name)return alert('Pilih nama karyawan.');if(!r||!r.in)return alert('Check-in belum dilakukan.');if(r.out)return alert('Check-out sudah tercatat.');if(state.gps.lat==null)return alert('Admin perlu mengatur titik GPS 93 Space terlebih dahulu.');openCamera('out')}
+function clearToday(){if(!confirm('Hapus seluruh catatan absensi hari ini?'))return;state.attendance=state.attendance.filter(x=>x.date!==today());save();renderAll()}
+function renderAttendance(){let t=today(),records=state.attendance.filter(x=>x.date===t);document.getElementById('present').textContent=records.filter(x=>x.in).length;document.getElementById('pending').textContent=Math.max(0,state.employees.length-records.filter(x=>x.in).length);document.getElementById('late').textContent=records.filter(x=>x.late).length;let todayLateCount=records.filter(r=>r.in&&getLateMinutes(r)>0).length,todayLateMinutes=records.reduce((sum,r)=>sum+getLateMinutes(r),0);document.getElementById('todayLateSummary').textContent='Terlambat '+todayLateCount+' orang · Total '+todayLateMinutes+' menit.';document.getElementById('todaySummary').innerHTML=records.length?records.map(r=>`<p>${escapeHtml(r.name)} · ${shiftName(r.shift)}<br><span class="note">${r.in||'Belum masuk'} — ${r.out||'Belum pulang'}</span></p>`).join(''):'Belum ada data absensi.';let rows=state.attendance.slice().sort((a,b)=>(b.date+b.name).localeCompare(a.date+a.name));document.getElementById('attendanceRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.date}</td><td>${escapeHtml(r.name)}</td><td>${shiftName(r.shift)}</td><td>${r.in||'-'}</td><td>${r.photo?'<a href="'+r.photo+'" target="_blank"><img alt="Selfie masuk" src="'+r.photo+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px"></a>':'-'}</td><td>${r.out||'-'}</td><td>${r.outPhoto?'<a href="'+r.outPhoto+'" target="_blank"><img alt="Selfie pulang" src="'+r.outPhoto+'" style="width:48px;height:48px;object-fit:cover;border-radius:6px"></a>':'-'}</td><td>${Number.isFinite(getLateMinutes(r))?getLateMinutes(r):0}</td><td>${r.status==='Alpha'?'Alpha':r.status==='Izin'?'Izin':r.status==='Sakit'?'Sakit':r.late?'Terlambat':r.in?'Hadir':'-'}${r.demo?' · SIMULASI':''}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada data.</td></tr>';let sh=document.getElementById('attShift').value;document.getElementById('shiftInfo').textContent='Jam shift '+shiftName(sh)+': '+state.shifts[sh].start+'–'+state.shifts[sh].end}
+function renderCalendar(){let y=selectedDate.getFullYear(),m=selectedDate.getMonth();document.getElementById('monthTitle').textContent=selectedDate.toLocaleDateString('id-ID',{month:'long',year:'numeric'});let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),cal=document.getElementById('calendar');cal.innerHTML=['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(x=>`<div class="weekday">${x}</div>`).join('');for(let i=0;i<first;i++)cal.innerHTML+='<div class="day blank"></div>';for(let d=1;d<=days;d++){let date=isoDate(new Date(y,m,d)),items=Object.entries(state.schedule[date]||{}).map(([name,sh])=>name+': '+(sh==='off'?'Libur':shiftName(sh)));cal.innerHTML+=`<div class="day ${date===selectedDay?'selected':''} ${date===today()?'today':''}" onclick="selectDay('${date}')"><span class="num">${d}</span><span class="assign">${items.slice(0,2).map(escapeHtml).join('<br>')}${items.length>2?'<br>…':''}</span></div>`}}
+function selectDay(date){selectedDay=date;document.getElementById('schedDate').value=date;renderCalendar()}
+function changeMonth(n){selectedDate=new Date(selectedDate.getFullYear(),selectedDate.getMonth()+n,1);renderCalendar()}
+function saveSchedule(){let date=document.getElementById('schedDate').value,name=document.getElementById('schedEmployee').value,sh=document.getElementById('schedShift').value;if(!date||!name)return alert('Pilih tanggal dan karyawan.');state.schedule[date]=state.schedule[date]||{};state.schedule[date][name]=sh;selectedDay=date;selectedDate=new Date(date+'T12:00:00');save();renderCalendar();alert('Jadwal tersimpan.')}
+function copyNextMonth(){let y=selectedDate.getFullYear(),m=selectedDate.getMonth(),next=new Date(y,m+1,1),max=new Date(next.getFullYear(),next.getMonth()+1,0).getDate(),count=0;Object.keys(state.schedule).forEach(date=>{let d=new Date(date+'T12:00:00');if(d.getFullYear()===y&&d.getMonth()===m){let target=isoDate(new Date(next.getFullYear(),next.getMonth(),Math.min(d.getDate(),max)));state.schedule[target]={...(state.schedule[target]||{}),...state.schedule[date]};count++}});save();alert('Jadwal berhasil disalin untuk '+count+' tanggal.');selectedDate=next;renderCalendar()}
+function exportCSV(){let data=[['Tanggal','Nama','Shift','Masuk','Pulang','Terlambat','Menit Telat'],...state.attendance.map(r=>[r.date,r.name,shiftName(r.shift),r.in,r.out,getLateMinutes(r)>0?'Ya':'Tidak',getLateMinutes(r)])];let csv=data.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='absensi_93_space_v6.csv';a.click();URL.revokeObjectURL(url)}
+function renderAll(){fillSelects();renderSettings();renderAttendance();renderCalendar()}
+document.getElementById('schedDate').value=selectedDay;document.getElementById('schedDate').addEventListener('change',e=>selectDay(e.target.value));document.getElementById('attShift').addEventListener('change',renderAttendance);setInterval(()=>document.getElementById('clock').textContent=timeNow(),1000);renderAll();
+
+// Add-on prototype: selfie, geofence, leave/sick/swap requests, overtime and monthly status.
+state.requests=state.requests||[];state.overtime=state.overtime||[];state.gps={lat:-7.7912765,lon:110.3854071,radius:50};save();
+let selfieStream=null,selfieData=null,cameraMode="in";
+const baseFillSelects=fillSelects;
+fillSelects=function(){baseFillSelects();['reqEmployee','swapFrom','swapTo','otEmployee'].forEach(id=>{let el=document.getElementById(id);if(!el)return;let old=el.value;el.innerHTML='';state.employees.forEach(n=>{let o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o)});if(old&&state.employees.includes(old))el.value=old})};
+const baseShowSection=showSection;
+showSection=function(id){baseShowSection(id);if(id==='requests'){renderRequests();renderMonthly();showGpsSettings()}};
+function showGpsSettings(){document.getElementById('gpsRadius').value=state.gps.radius||100;document.getElementById('gpsLatInput').value=state.gps.lat??'';document.getElementById('gpsLonInput').value=state.gps.lon??'';document.getElementById('gpsStatus').textContent=state.gps.lat==null?'Titik lokasi belum diatur.':'Titik GPS tersimpan: '+Number(state.gps.lat).toFixed(6)+', '+Number(state.gps.lon).toFixed(6)+' · radius '+state.gps.radius+' meter.'}
+function openGoogleMaps(){let q=document.getElementById('gpsAddress').value.trim();if(!q&&state.gps.lat!=null)q=state.gps.lat+','+state.gps.lon;if(!q)return alert('Masukkan alamat 93 Space terlebih dahulu.');window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q),'_blank')}
+function saveGpsSettings(){let lat=document.getElementById('gpsLatInput').value.trim(),lon=document.getElementById('gpsLonInput').value.trim();if(lat===''||lon==='')return alert('Masukkan latitude dan longitude dari Google Maps, atau gunakan lokasi perangkat.');lat=Number(lat);lon=Number(lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat<-90||lat>90||lon<-180||lon>180)return alert('Koordinat tidak valid. Periksa latitude dan longitude.');state.gps.lat=lat;state.gps.lon=lon;state.gps.radius=Math.max(10,Number(document.getElementById('gpsRadius').value)||100);save();showGpsSettings();alert('Titik GPS dan radius 93 Space berhasil disimpan.')}
+function setShopLocation(){if(!navigator.geolocation)return alert('GPS tidak tersedia di browser ini.');navigator.geolocation.getCurrentPosition(pos=>{state.gps.lat=pos.coords.latitude;state.gps.lon=pos.coords.longitude;state.gps.radius=Math.max(10,Number(document.getElementById('gpsRadius').value)||100);save();showGpsSettings();alert('Titik GPS 93 Space tersimpan dari lokasi perangkat ini.')},()=>alert('Lokasi gagal diambil. Izinkan akses lokasi browser dan coba lagi.'),{enableHighAccuracy:true,timeout:15000})}
+function metersBetween(a,b,c,d){const rad=x=>x*Math.PI/180,R=6371000,dl=rad(c-a),dn=rad(d-b),v=Math.sin(dl/2)**2+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(dn/2)**2;return R*2*Math.atan2(Math.sqrt(v),Math.sqrt(1-v))}
+function checkIn(){if(!document.getElementById('attEmployee').value)return alert('Tambahkan karyawan terlebih dahulu.');if(state.gps.lat==null)return alert('Admin perlu mengatur titik GPS 93 Space di menu Status & Lembur.');openCamera('in')}
+async function openCamera(mode='in'){cameraMode=mode;document.getElementById('cameraTitle').textContent=mode==='out'?'Selfie check-out':'Selfie check-in';document.getElementById('cameraModal').style.display='block';document.getElementById('selfiePreview').style.display='none';selfieData=null;try{selfieStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});document.getElementById('cameraVideo').srcObject=selfieStream;document.getElementById('cameraMsg').textContent='Arahkan kamera ke wajah, lalu tekan Ambil foto.'}catch(e){document.getElementById('cameraMsg').textContent='Kamera tidak bisa dibuka. Periksa izin kamera browser.'}}
+function captureSelfie(){let v=document.getElementById('cameraVideo'),c=document.getElementById('cameraCanvas');if(!v.videoWidth)return alert('Kamera belum siap. Tunggu sebentar.');c.width=Math.min(v.videoWidth,640);c.height=Math.round(v.videoHeight*c.width/v.videoWidth);c.getContext('2d').drawImage(v,0,0,c.width,c.height);selfieData=c.toDataURL('image/jpeg',0.55);let im=document.getElementById('selfiePreview');im.src=selfieData;im.style.display='block';document.getElementById('cameraMsg').textContent='Foto '+(cameraMode==='out'?'check-out':'check-in')+' diambil. Memeriksa GPS…';navigator.geolocation.getCurrentPosition(pos=>{let d=metersBetween(state.gps.lat,state.gps.lon,pos.coords.latitude,pos.coords.longitude),radius=Number(state.gps.radius)||100;if(d>radius){document.getElementById('cameraMsg').textContent='Di luar radius: '+Math.round(d)+' m (batas '+radius+' m).';return}cameraMode==='out'?recordCheckout(d):recordCheckin(d)},()=>document.getElementById('cameraMsg').textContent='GPS gagal. Aktifkan izin lokasi dan coba lagi.',{enableHighAccuracy:true,timeout:20000})}
+function recordCheckin(distance){let name=document.getElementById('attEmployee').value,sh=document.getElementById('attShift').value,date=today(),r=currentRecord(date,name);if(!r){r={date,name,shift:sh,in:'',out:'',late:false};state.attendance.push(r)}if(r.in){alert('Sudah check-in hari ini.');cancelCamera();return}r.shift=sh;r.in=timeNow();let actual=minutes(r.in),start=minutes(state.shifts[sh]?.start);r.lateMinutes=Number.isFinite(actual)&&Number.isFinite(start)?Math.max(0,actual-start-Number(state.grace||0)):0;r.late=r.lateMinutes>0;r.photo=selfieData;r.gpsDistance=Math.round(distance);r.status='Hadir';save();renderAll();renderMonthly();alert('Check-in berhasil. Foto dan GPS tercatat. '+(r.lateMinutes>0?'Terlambat '+r.lateMinutes+' menit.':'Tepat waktu.'));cancelCamera()}
+function recordCheckout(distance){let name=document.getElementById('attEmployee').value,r=currentRecord(today(),name);if(!r||!r.in){alert('Check-in belum dilakukan.');cancelCamera();return}if(r.out){alert('Check-out sudah tercatat.');cancelCamera();return}r.out=timeNow();r.outPhoto=selfieData;r.outGpsDistance=Math.round(distance);save();renderAll();alert('Check-out berhasil. Foto selfie dan GPS tersimpan di riwayat.');cancelCamera()}
+function cancelCamera(){if(selfieStream){selfieStream.getTracks().forEach(t=>t.stop());selfieStream=null}document.getElementById('cameraVideo').srcObject=null;document.getElementById('cameraModal').style.display='none'}
+function submitRequest(){let name=document.getElementById('reqEmployee').value,date=document.getElementById('reqDate').value,type=document.getElementById('reqType').value;if(!name||!date)return alert('Pilih nama dan tanggal.');state.requests.push({id:Date.now(),kind:'leave',name,date,type,note:document.getElementById('reqNote').value,status:'Menunggu'});save();renderRequests();alert('Pengajuan tersimpan dan menunggu persetujuan admin.')}
+function submitSwap(){let from=document.getElementById('swapFrom').value,to=document.getElementById('swapTo').value,date=document.getElementById('swapDate').value;if(!from||!to||from===to||!date)return alert('Pilih dua karyawan berbeda dan tanggal.');state.requests.push({id:Date.now(),kind:'swap',from,to,date,note:document.getElementById('swapNote').value,status:'Menunggu'});save();renderRequests();alert('Pengajuan tukar jadwal menunggu persetujuan admin.')}
+function approveRequest(id,ok){let q=state.requests.find(x=>x.id===id);if(!q)return;q.status=ok?'Disetujui':'Ditolak';if(ok&&q.kind==='leave'){let r=currentRecord(q.date,q.name);if(!r){r={date:q.date,name:q.name,shift:'',in:'',out:'',late:false};state.attendance.push(r)}r.status=q.type==='sakit'?'Sakit':'Izin'}if(ok&&q.kind==='swap'){let day=state.schedule[q.date]||{},a=day[q.from],b=day[q.to];day[q.from]=b||'off';day[q.to]=a||'off';state.schedule[q.date]=day}save();renderRequests();renderMonthly();renderCalendar();alert(ok?'Pengajuan disetujui.':'Pengajuan ditolak.')}
+function renderRequests(){let box=document.getElementById('pendingRequests');if(!box)return;let arr=state.requests.slice().reverse();box.innerHTML=arr.length?arr.map(q=>`<div style="border-bottom:1px solid #eee;padding:10px 0"><b>${q.kind==='leave'?escapeHtml(q.name)+' · '+q.type:escapeHtml(q.from)+' ⇄ '+escapeHtml(q.to)}</b><br>${q.date} · ${q.status}${q.note?' · '+escapeHtml(q.note):''}${q.status==='Menunggu'?`<div class="actions" style="margin-top:8px"><button onclick="approveRequest(${q.id},true)">Setujui</button><button class="secondary" onclick="approveRequest(${q.id},false)">Tolak</button></div>`:''}</div>`).join(''):'Belum ada pengajuan.'}
+function renderMonthly(){
+ let inp=document.getElementById('recMonth');if(!inp)return;
+ let month=inp.value||today().slice(0,7);inp.value=month;
+ let rows=state.attendance.filter(r=>r.date.startsWith(month));
+ let counts={Hadir:0,Izin:0,Sakit:0,Alpha:0};
+ rows.forEach(r=>{let s=r.status||(r.in?'Hadir':'');if(counts[s]!==undefined)counts[s]++});
+ let totalLateCount=rows.filter(r=>r.in&&getLateMinutes(r)>0).length,totalLateMinutes=rows.reduce((sum,r)=>sum+getLateMinutes(r),0);
+ document.getElementById('monthlySummary').textContent=month+' · Total catatan: '+rows.length+' · Hadir '+counts.Hadir+' · Izin '+counts.Izin+' · Sakit '+counts.Sakit+' · Alpha '+counts.Alpha+' · Terlambat '+totalLateCount+' kali ('+totalLateMinutes+' menit total).';
+ let employeeRows=state.employees.map(name=>{
+   let er=rows.filter(r=>r.name===name),present=er.filter(r=>(r.status|| (r.in?'Hadir':''))==='Hadir'&&r.in).length;
+   let late=er.filter(r=>r.in&&getLateMinutes(r)>0),lateMinutes=late.reduce((sum,r)=>sum+getLateMinutes(r),0);
+   let izin=er.filter(r=>(r.status||'')==='Izin').length,sakit=er.filter(r=>(r.status||'')==='Sakit').length,alpha=er.filter(r=>(r.status||'')==='Alpha').length;
+   let ot=state.overtime.filter(o=>o.name===name&&o.date.startsWith(month)).reduce((sum,o)=>sum+Number(o.minutes||0),0);
+   return {name,present,lateCount:late.length,lateMinutes,izin,sakit,alpha,ot};
+ });
+ document.getElementById('employeeMonthlyRows').innerHTML=employeeRows.length?employeeRows.map(e=>`<tr><td>${escapeHtml(e.name)}</td><td>${e.present} hari</td><td>${e.lateCount} kali</td><td>${e.lateMinutes} menit</td><td>${e.izin} hari</td><td>${e.sakit} hari</td><td>${e.alpha} hari</td><td>${Math.floor(e.ot/60)} jam ${e.ot%60} mnt</td></tr>`).join(''):'<tr><td colspan="8" class="empty">Tambahkan karyawan terlebih dahulu.</td></tr>';
+ document.getElementById('monthlyRows').innerHTML=rows.length?rows.slice().sort((a,b)=>(a.date+a.name).localeCompare(b.date+b.name)).map(r=>`<tr><td>${r.date}</td><td>${escapeHtml(r.name)}</td><td>${r.status||(r.in?'Hadir':'-')}${r.demo?' · SIMULASI':''}</td><td>${r.in||'-'}</td><td>${r.out||'-'}</td><td>${getLateMinutes(r)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada data pada bulan ini.</td></tr>';
+ let otTotal=state.overtime.filter(o=>o.date.startsWith(month)).reduce((n,o)=>n+Number(o.minutes||0),0);
+ document.getElementById('otSummary').textContent='Total overtime '+month+': '+Math.floor(otTotal/60)+' jam '+otTotal%60+' menit.';
+}
+function saveOvertime(){let name=document.getElementById('otEmployee').value,date=document.getElementById('otDate').value,start=document.getElementById('otStart').value,end=document.getElementById('otEnd').value;if(!name||!date||!start||!end)return alert('Lengkapi nama, tanggal, dan jam.');let n=minutes(end)-minutes(start);if(n<=0)return alert('Jam selesai harus setelah jam mulai.');state.overtime.push({name,date,start,end,kind:document.getElementById('otKind').value,note:document.getElementById('otNote').value,minutes:n});save();renderMonthly();alert('Lembur tersimpan: '+Math.floor(n/60)+' jam '+n%60+' menit.')}
+function applyAutoAlpha(){let date=today(),now=new Date(),sched=state.schedule[date]||{};Object.entries(sched).forEach(([name,sh])=>{if(sh==='off')return;let end=minutes(state.shifts[sh]?.end||'23:00');if(now.getHours()*60+now.getMinutes()>end&&!currentRecord(date,name)){let exc=state.requests.some(q=>q.name===name&&q.date===date&&q.status==='Disetujui'&&(q.type==='izin'||q.type==='sakit'));if(!exc){state.attendance.push({date,name,shift:sh,in:'',out:'',late:false,status:'Alpha'});save()}}})}
+document.getElementById('recMonth').value=today().slice(0,7);['reqDate','swapDate','otDate'].forEach(id=>document.getElementById(id).value=today());document.getElementById('recMonth').addEventListener('change',renderMonthly);
+const prevCheckout=checkOut;checkOut=function(){prevCheckout();let r=currentRecord(today(),document.getElementById('attEmployee').value);if(r&&r.out)r.status='Hadir';save();renderMonthly()};
+const prevRender=renderAll;renderAll=function(){prevRender();applyAutoAlpha()};
+
+</script>
+
+<script>
+// Admin prototype: daily contract income and SP violation records.
+state.contractRates=state.contractRates||{probation:{label:'Probation',duration:'3 bulan',base:70000,meal:0,transport:0},six:{label:'Kontrak 6 bulan',duration:'6 bulan',base:70000,meal:10000,transport:0},year:{label:'Kontrak 1 tahun',duration:'12 bulan',base:70000,meal:10000,transport:10000}};
+// Update existing browser data too: one-year contract meal allowance defaults to Rp10.000/day.
+if(state.contractRates.year && Number(state.contractRates.year.meal||0)===0){state.contractRates.year.meal=10000;save();}
+state.employeeContracts=state.employeeContracts||{};state.fines=state.fines||{1:150000,2:0,3:0};state.violations=state.violations||[];
+const rupiah=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
+function renderPayrollAdmin(){let rates=document.getElementById('contractRates');if(!rates)return;rates.innerHTML=Object.entries(state.contractRates).map(([k,c])=>`<tr><td>${c.label}</td><td>${c.duration}</td><td><input type="number" min="0" id="rate_${k}_base" value="${c.base}"></td><td><input type="number" min="0" id="rate_${k}_meal" value="${c.meal}"></td><td><input type="number" min="0" id="rate_${k}_transport" value="${c.transport}"></td></tr>`).join('');
+['contractEmployee','violationEmployee'].forEach(id=>{let el=document.getElementById(id),old=el.value;el.innerHTML=state.employees.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');if(old&&state.employees.includes(old))el.value=old});
+let ce=document.getElementById('contractEmployee').value;document.getElementById('contractType').value=state.employeeContracts[ce]||'probation';document.getElementById('employeeContracts').innerHTML=state.employees.map(n=>`${escapeHtml(n)} — ${state.contractRates[state.employeeContracts[n]||'probation'].label}`).join('<br>')||'Belum ada karyawan.';
+['1','2','3'].forEach(i=>document.getElementById('fineSP'+i).value=state.fines[i]||0);document.getElementById('violationAmount').value=state.fines[document.getElementById('violationLevel').value]||0;renderPayroll();renderViolations()}
+function saveContractRates(){Object.keys(state.contractRates).forEach(k=>['base','meal','transport'].forEach(t=>state.contractRates[k][t]=Math.max(0,Number(document.getElementById(`rate_${k}_${t}`).value)||0)));save();renderPayrollAdmin();alert('Nominal kontrak disimpan dalam rupiah.')}
+function saveEmployeeContract(){let n=document.getElementById('contractEmployee').value;if(!n)return alert('Tambahkan/pilih karyawan terlebih dahulu.');state.employeeContracts[n]=document.getElementById('contractType').value;save();renderPayrollAdmin();alert('Jenis kontrak karyawan disimpan.')}
+function saveFineRates(){['1','2','3'].forEach(i=>state.fines[i]=Math.max(0,Number(document.getElementById('fineSP'+i).value)||0));save();renderPayrollAdmin();alert('Nominal denda SP disimpan dalam rupiah.')}
+document.getElementById('violationLevel').addEventListener('change',()=>document.getElementById('violationAmount').value=state.fines[document.getElementById('violationLevel').value]||0);
+function addViolation(){let name=document.getElementById('violationEmployee').value,date=document.getElementById('violationDate').value,level=document.getElementById('violationLevel').value,note=document.getElementById('violationNote').value.trim(),amount=Math.max(0,Number(document.getElementById('violationAmount').value)||0);if(!name||!date||!note)return alert('Lengkapi karyawan, tanggal, dan deskripsi pelanggaran.');state.violations.push({id:Date.now(),name,date,level,note,amount});save();document.getElementById('violationNote').value='';renderViolations();renderPayroll();alert('Pelanggaran SP tersimpan dengan denda '+rupiah(amount)+'.')}
+function renderViolations(){let tbody=document.getElementById('violationRows');if(!tbody)return;let m=document.getElementById('violationMonth').value||today().slice(0,7),arr=state.violations.filter(v=>v.date.startsWith(m)).slice().reverse();tbody.innerHTML=arr.length?arr.map(v=>`<tr><td>${v.date}</td><td>${escapeHtml(v.name)}</td><td>SP ${v.level}</td><td>${escapeHtml(v.note)}</td><td>${rupiah(v.amount)}</td><td><button class="secondary" onclick="deleteViolation(${v.id})">Hapus</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada catatan pelanggaran pada bulan ini.</td></tr>'}
+function deleteViolation(id){if(!confirm('Hapus catatan pelanggaran ini?'))return;state.violations=state.violations.filter(v=>v.id!==id);save();renderViolations();renderPayroll()}
+function renderPayroll(){let tbody=document.getElementById('payrollRows');if(!tbody)return;let m=document.getElementById('payMonth').value||today().slice(0,7);document.getElementById('payMonth').value=m;tbody.innerHTML=state.employees.length?state.employees.map(n=>{let ct=state.contractRates[state.employeeContracts[n]||'probation'],days=state.attendance.filter(a=>a.name===n&&a.date.startsWith(m)&&(a.status|| (a.in?'Hadir':''))==='Hadir'&&a.in).length,base=days*ct.base,benefit=days*(ct.meal+ct.transport),fine=state.violations.filter(v=>v.name===n&&v.date.startsWith(m)).reduce((s,v)=>s+Number(v.amount||0),0);return `<tr><td>${escapeHtml(n)}</td><td>${ct.label}</td><td>${days}</td><td>${rupiah(base)}</td><td>${rupiah(benefit)}</td><td>${rupiah(fine)}</td><td><b>${rupiah(base+benefit-fine)}</b></td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Tambahkan karyawan terlebih dahulu.</td></tr>'}
+const oldShowSection=showSection;showSection=function(id){oldShowSection(id);['attendance','schedule','settings','requests','payroll'].forEach(x=>{let el=document.getElementById(x);if(el)el.style.display=x===id?'block':'none'});if(id==='payroll')renderPayrollAdmin()};
+const oldAddEmployee=addEmployee;addEmployee=function(){oldAddEmployee();renderPayrollAdmin()};const oldRemoveEmployee=removeEmployee;removeEmployee=function(e){oldRemoveEmployee(e);renderPayrollAdmin()};
+document.getElementById('payMonth').value=today().slice(0,7);document.getElementById('violationMonth').value=today().slice(0,7);document.getElementById('violationDate').value=today();document.getElementById('contractEmployee').addEventListener('change',()=>document.getElementById('contractType').value=state.employeeContracts[document.getElementById('contractEmployee').value]||'probation');document.getElementById('violationEmployee').addEventListener('change',()=>{});
+renderPayrollAdmin();
+</script>
+
+<script>
+// V7: early checkout requires PIC approval before camera/GPS checkout can proceed.
+function v7ShiftEndMinutes(record){
+  if(!record||!record.shift||!state.shifts[record.shift]) return NaN;
+  return minutes(state.shifts[record.shift].end);
+}
+function v7IsEarlyCheckout(record, timeValue){
+  let end=v7ShiftEndMinutes(record), actual=minutes(timeValue||timeNow());
+  return Number.isFinite(end)&&Number.isFinite(actual)&&actual<end;
+}
+function v7FindEarlyRequest(name,date){
+  return state.requests.find(q=>q.kind==='earlyCheckout'&&q.name===name&&q.date===date&&q.status==='Disetujui');
+}
+function checkOut(){
+  let name=document.getElementById('attEmployee').value,r=currentRecord(today(),name);
+  if(!name)return alert('Pilih nama karyawan.');
+  if(!r||!r.in)return alert('Check-in belum dilakukan.');
+  if(r.out)return alert('Check-out sudah tercatat.');
+  let now=timeNow(),end=v7ShiftEndMinutes(r);
+  if(v7IsEarlyCheckout(r,now)){
+    let approved=v7FindEarlyRequest(name,today());
+    if(!approved){
+      let pending=state.requests.find(q=>q.kind==='earlyCheckout'&&q.name===name&&q.date===today()&&q.status==='Menunggu');
+      if(pending)return alert('Permintaan pulang lebih awal masih menunggu persetujuan PIC.');
+      let reason=prompt('Jam shift selesai '+(state.shifts[r.shift]?.end||'-')+'. Check-out lebih awal perlu persetujuan PIC. Masukkan alasan pengajuan:');
+      if(reason===null)return;
+      reason=reason.trim();
+      if(!reason)return alert('Alasan pengajuan wajib diisi.');
+      state.requests.push({id:Date.now(),kind:'earlyCheckout',name,date:today(),shift:r.shift,shiftEnd:state.shifts[r.shift].end,requestedAt:now,note:reason,status:'Menunggu'});
+      save();renderRequests();
+      alert('Permintaan check-out lebih awal dikirim. Silakan minta PIC menyetujui melalui menu Status & Lembur.');
+      return;
+    }
+    r.earlyCheckoutApprovalId=approved.id;
+    r.earlyCheckoutApprovedBy=approved.approvedBy||'PIC';
+    r.earlyCheckoutReason=approved.note||'';
+    r.earlyCheckout=true;
+  }
+  if(state.gps.lat==null)return alert('Admin perlu mengatur titik GPS 93 Space terlebih dahulu.');
+  openCamera('out');
+}
+const v7RecordCheckoutBase=recordCheckout;
+recordCheckout=function(distance){
+  let name=document.getElementById('attEmployee').value,r=currentRecord(today(),name);
+  if(!r||!r.in||r.out){v7RecordCheckoutBase(distance);return;}
+  if(v7IsEarlyCheckout(r,timeNow())){
+    let q=v7FindEarlyRequest(name,today());
+    if(!q){alert('Check-out lebih awal belum disetujui PIC.');cancelCamera();return;}
+    r.earlyCheckout=true;
+    r.earlyCheckoutApprovalId=q.id;
+    r.earlyCheckoutApprovedBy=q.approvedBy||'PIC';
+    r.earlyCheckoutReason=q.note||'';
+    r.earlyCheckoutShiftEnd=q.shiftEnd||state.shifts[r.shift]?.end||'';
+  }
+  v7RecordCheckoutBase(distance);
+  if(r.out&&r.earlyCheckoutApprovalId){
+    let q=state.requests.find(x=>x.id===r.earlyCheckoutApprovalId);
+    if(q){q.status='Digunakan';q.usedAt=r.out;}
+    save();renderRequests();
+  }
+};
+// PIC approval extension for early checkout requests; other request types retain V6.1 behavior.
+const v7ApproveRequestBase=approveRequest;
+approveRequest=function(id,ok){
+  let q=state.requests.find(x=>x.id===id);
+  if(q&&q.kind==='earlyCheckout'){
+    if(q.status!=='Menunggu')return alert('Permintaan ini sudah diproses.');
+    if(ok){
+      let pic=prompt('Nama PIC yang menyetujui:');
+      if(pic===null)return;
+      pic=pic.trim();
+      if(!pic)return alert('Nama PIC wajib diisi untuk persetujuan.');
+      q.status='Disetujui';q.approvedBy=pic;q.approvedAt=timeNow();
+    }else{
+      q.status='Ditolak';q.rejectedAt=timeNow();
+    }
+    save();renderRequests();
+    alert(ok?'Permintaan check-out lebih awal disetujui. Karyawan dapat melakukan check-out dengan selfie dan GPS.':'Permintaan check-out lebih awal ditolak.');
+    return;
+  }
+  v7ApproveRequestBase(id,ok);
+};
+const v7RenderRequestsBase=renderRequests;
+renderRequests=function(){
+  let box=document.getElementById('pendingRequests');if(!box)return;
+  let arr=state.requests.slice().reverse();
+  box.innerHTML=arr.length?arr.map(q=>{
+    if(q.kind==='earlyCheckout'){
+      let status=q.status==='Disetujui'?'Disetujui PIC':q.status;
+      return `<div style="border:1px solid #e5e5e5;border-radius:10px;padding:12px;margin:8px 0">
+        <b>Permintaan pulang lebih awal · ${escapeHtml(q.name)}</b><br>
+        <span class="note">${q.date} · Shift ${shiftName(q.shift)} · Jam pulang ${q.shiftEnd||'-'} · Pengajuan ${q.requestedAt||'-'}</span><br>
+        <span>Alasan: ${escapeHtml(q.note||'-')}</span><br>
+        <span class="note">Status: ${escapeHtml(status)}${q.approvedBy?' · PIC: '+escapeHtml(q.approvedBy):''}${q.usedAt?' · Check-out: '+escapeHtml(q.usedAt):''}</span>
+        ${q.status==='Menunggu'?`<div class="actions" style="margin-top:8px"><button onclick="approveRequest(${q.id},true)">Setujui</button><button class="secondary" onclick="approveRequest(${q.id},false)">Tolak</button></div>`:''}
+      </div>`;
+    }
+    return `<div style="border-bottom:1px solid #eee;padding:10px 0"><b>${q.kind==='leave'?escapeHtml(q.name)+' · '+q.type:escapeHtml(q.from)+' ⇄ '+escapeHtml(q.to)}</b><br>${q.date} · ${q.status}${q.note?' · '+escapeHtml(q.note):''}${q.status==='Menunggu'?`<div class="actions" style="margin-top:8px"><button onclick="approveRequest(${q.id},true)">Setujui</button><button class="secondary" onclick="approveRequest(${q.id},false)">Tolak</button></div>`:''}</div>`;
+  }).join(''):'Belum ada pengajuan.';
+};
+showSection('attendance');
+</script>
+
+
+<script>
+// Test data generator for payroll/attendance workflow. Demo entries are tagged and removable.
+function demoRandInt(min,max){return Math.floor(Math.random()*(max-min+1))+min}
+function demoTime(total){total=((total%1440)+1440)%1440;return String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0')}
+function demoShuffle(arr){for(let i=arr.length-1;i>0;i--){let j=demoRandInt(0,i);[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function createDemoRandomData(){
+  const month=document.getElementById('payMonth').value||today().slice(0,7);
+  if(!state.employees.length)return alert('Belum ada karyawan untuk dibuatkan data simulasi.');
+  if(!confirm('Buat data absensi, keterlambatan, lembur, izin/sakit, dan pulang lebih awal untuk '+month+'? Data simulasi sebelumnya akan diganti, data asli tetap aman.'))return;
+  state.attendance=(state.attendance||[]).filter(r=>!r.demo);
+  state.overtime=(state.overtime||[]).filter(o=>!o.demo);
+  state.requests=(state.requests||[]).filter(q=>!q.demo);
+  const [yy,mm]=month.split('-').map(Number);
+  const lastDay=new Date(yy,mm,0).getDate();
+  const cap=month===today().slice(0,7)?Number(today().slice(8,10)):lastDay;
+  const shiftKeys=['morning','middle','evening'];
+  let totalLate=0,totalOT=0,totalEarly=0,totalAttendance=0;
+  state.employees.forEach((name,staffIndex)=>{
+    let days=Array.from({length:Math.max(0,cap)},(_,i)=>i+1);
+    // Create a few off days and shuffle which weekdays are worked.
+    days=demoShuffle(days).slice(0,Math.max(1,days.length-demoRandInt(4,6))).sort((a,b)=>a-b);
+    let staffRecords=[];
+    days.forEach(day=>{
+      const date=yy+'-'+String(mm).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const shift=shiftKeys[demoRandInt(0,2)],shiftStart=minutes(state.shifts[shift].start),shiftEnd=minutes(state.shifts[shift].end);
+      const isLate=Math.random()<0.28;
+      const inMinutes=shiftStart+(isLate?state.grace+demoRandInt(2,24):demoRandInt(0,Math.max(0,state.grace)));
+      const isEarly=Math.random()<0.09;
+      const earlyOffset=shift==='evening'?demoRandInt(20,40):demoRandInt(20,95);const outMinutes=isEarly?shiftEnd-earlyOffset:shiftEnd;
+      const record={date,name,shift,in:demoTime(inMinutes),out:demoTime(outMinutes),late:isLate,lateMinutes:Math.max(0,inMinutes-shiftStart-state.grace),status:'Hadir',demo:true};
+      if(isEarly){
+        const id=Date.now()+staffIndex*10000+day*100+1;
+        const request={id,kind:'earlyCheckout',name,date,shift,shiftEnd:state.shifts[shift].end,requestedAt:demoTime(outMinutes-15),note:'Data simulasi: izin pulang lebih awal',status:'Disetujui',approvedBy:'PIC Demo',approvedAt:demoTime(outMinutes-10),demo:true};
+        state.requests.push(request);
+        record.earlyCheckout=true;record.earlyCheckoutApprovalId=id;record.earlyCheckoutApprovedBy='PIC Demo';record.earlyCheckoutReason=request.note;record.earlyCheckoutShiftEnd=state.shifts[shift].end;
+        totalEarly++;
+      }
+      state.attendance.push(record);staffRecords.push(record);totalAttendance++;
+      if(record.lateMinutes>0)totalLate++;
+    });
+    // Add one approved leave/sick record on a day without attendance, if possible.
+    const absentDays=Array.from({length:Math.max(0,cap)},(_,i)=>i+1).filter(day=>!days.includes(day));
+    if(absentDays.length){
+      const day=demoShuffle(absentDays)[0],date=yy+'-'+String(mm).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const type=Math.random()<0.5?'izin':'sakit',id=Date.now()+staffIndex*10000+day*100+2;
+      state.attendance.push({date,name,shift:'',in:'',out:'',late:false,status:type==='izin'?'Izin':'Sakit',demo:true});
+      state.requests.push({id,kind:'leave',name,date,type,note:'Data simulasi acak',status:'Disetujui',demo:true});
+    }
+    // Generate overtime on days with a morning or middle shift to keep time ranges valid.
+    const otCandidates=demoShuffle(staffRecords.filter(r=>r.shift==='morning'||r.shift==='middle')).slice(0,demoRandInt(1,3));
+    otCandidates.forEach(r=>{
+      const endShift=minutes(state.shifts[r.shift].end),duration=demoRandInt(30,120);
+      state.overtime.push({name,date:r.date,start:demoTime(endShift),end:demoTime(endShift+duration),kind:'after',note:'Data simulasi acak',minutes:duration,demo:true});
+      totalOT+=duration;
+    });
+  });
+  save();
+  const monthInputs=['recMonth','violationMonth'];monthInputs.forEach(id=>{const el=document.getElementById(id);if(el)el.value=month});
+  renderAll();renderMonthly();renderPayrollAdmin();renderRequests();
+  alert('Data simulasi dibuat untuk '+month+'.\\n'+totalAttendance+' absensi hadir · '+totalLate+' keterlambatan · '+Math.floor(totalOT/60)+' jam '+totalOT%60+' menit lembur · '+totalEarly+' pulang lebih awal disetujui PIC.\\nData ditandai SIMULASI.');
+}
+function removeDemoRandomData(){
+  if(!confirm('Hapus semua data SIMULASI saja? Data asli tidak akan dihapus.'))return;
+  const before=(state.attendance||[]).length+(state.overtime||[]).length+(state.requests||[]).length;
+  state.attendance=(state.attendance||[]).filter(r=>!r.demo);
+  state.overtime=(state.overtime||[]).filter(o=>!o.demo);
+  state.requests=(state.requests||[]).filter(q=>!q.demo);
+  save();renderAll();renderMonthly();renderPayrollAdmin();renderRequests();
+  alert('Data simulasi sudah dihapus. Data asli tetap tersimpan.');
+}
+</script>
+
+
+<script>
+// Complete monthly sample dataset: schedule + attendance + late days + overtime + off/leave/sick/alpha.
+window.createDemoRandomData=function(autoLoad=false){
+  const month='2026-10';
+  const already=state.attendance.some(r=>r.demo&&r.date&&r.date.startsWith(month));
+  if(!autoLoad&&!confirm('Buat sample data lengkap untuk Oktober 2026? Jadwal, absensi, lembur, dan pengajuan pada bulan Oktober akan diganti dengan data sample. Data bulan lain tidak diubah.'))return;
+  state.attendance=(state.attendance||[]).filter(r=>!(r.date&&r.date.startsWith(month))&&!r.demo);
+  state.overtime=(state.overtime||[]).filter(o=>!(o.date&&o.date.startsWith(month))&&!o.demo);
+  state.requests=(state.requests||[]).filter(q=>!(q.date&&q.date.startsWith(month))&&!q.demo);
+  state.schedule=state.schedule||{};
+  Object.keys(state.schedule).forEach(d=>{if(d.startsWith(month))delete state.schedule[d]});
+  const year=2026,mon=10,lastDay=31,staff=state.employees.slice();
+  const shifts=['morning','middle','evening'];
+  const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){let j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+  const timeAt=m=>{m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+  const mins=t=>{let [h,m]=t.split(':').map(Number);return h*60+m};
+  staff.forEach((name,idx)=>{
+    const allDays=Array.from({length:lastDay},(_,i)=>i+1);
+    const offDays=new Set(shuffle(allDays).slice(0,rnd(5,7)));
+    const workDays=allDays.filter(d=>!offDays.has(d));
+    const statuses={}; // each scheduled work day gets a status
+    const special=shuffle(workDays);
+    const alphaDays=new Set(special.slice(0,rnd(1,2)));
+    const leaveDays=new Set(special.slice(2,3));
+    const sickDays=new Set(special.slice(3,4));
+    workDays.forEach((day,i)=>{
+      const date=month+'-'+String(day).padStart(2,'0');
+      const shift=shifts[(day+idx+rnd(0,2))%3];
+      state.schedule[date]=state.schedule[date]||{};
+      state.schedule[date][name]=shift;
+      if(offDays.has(day))return;
+      let status='Hadir';
+      if(alphaDays.has(day))status='Alpha';
+      else if(leaveDays.has(day))status='Izin';
+      else if(sickDays.has(day))status='Sakit';
+      statuses[day]=status;
+      if(status!=='Hadir'){
+        state.attendance.push({date,name,shift,status,in:'',out:'',late:false,lateMinutes:0,demo:true});
+        if(status==='Izin'||status==='Sakit'){
+          state.requests.push({id:Date.now()+idx*10000+day,kind:'leave',name,date,type:status.toLowerCase(),note:'Sample data',status:'Disetujui',demo:true});
+        }
+        return;
+      }
+      const isLate=Math.random()<0.24;
+      const start=mins(state.shifts[shift].start);
+      const inMin=start+(isLate?Number(state.grace||5)+rnd(3,28):rnd(0,Number(state.grace||5)));
+      const end=mins(state.shifts[shift].end);
+      const early=Math.random()<0.10;
+      const earlyMin=shift==='evening'?rnd(20,40):rnd(25,75);
+      const outMin=early?end-earlyMin:end+rnd(0,8);
+      const record={date,name,shift,status:'Hadir',in:timeAt(inMin),out:timeAt(outMin),late:false,lateMinutes:0,demo:true};
+      record.lateMinutes=Math.max(0,inMin-start-Number(state.grace||5));
+      record.late=record.lateMinutes>0;
+      if(early){
+        const id=Date.now()+idx*100000+day*10;
+        const request={id,kind:'earlyCheckout',name,date,shift,shiftEnd:state.shifts[shift].end,requestedAt:timeAt(outMin-10),note:'Sample izin pulang lebih awal',status:'Disetujui',approvedBy:'PIC Sample',approvedAt:timeAt(outMin-5),demo:true};
+        state.requests.push(request);
+        record.earlyCheckout=true;record.earlyCheckoutApprovalId=id;record.earlyCheckoutApprovedBy='PIC Sample';record.earlyCheckoutReason=request.note;record.earlyCheckoutShiftEnd=state.shifts[shift].end;
+      }
+      state.attendance.push(record);
+    });
+    // Record an explicit "off" schedule for every rest day.
+    offDays.forEach(day=>{
+      const date=month+'-'+String(day).padStart(2,'0');
+      state.schedule[date]=state.schedule[date]||{};
+      state.schedule[date][name]='off';
+    });
+    // 3 overtime shifts per employee, attached to days marked Hadir.
+    const eligible=shuffle(workDays.filter(day=>statuses[day]==='Hadir'));
+    eligible.slice(0,3).forEach(day=>{
+      const date=month+'-'+String(day).padStart(2,'0');
+      const record=state.attendance.find(r=>r.demo&&r.name===name&&r.date===date&&r.status==='Hadir');
+      if(!record)return;
+      const end=mins(state.shifts[record.shift].end),duration=rnd(60,150);
+      state.overtime.push({name,date,start:timeAt(end),end:timeAt(end+duration),kind:'after',note:'Sample overtime',minutes:duration,demo:true});
+    });
+  });
+  save();
+  ['payMonth','recMonth','violationMonth'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=month});
+  selectedDate=new Date('2026-10-01T12:00:00');selectedDay='2026-10-01';
+  renderAll();renderMonthly();renderPayrollAdmin();renderRequests();
+  const stats=staff.map(name=>{
+    const a=state.attendance.filter(r=>r.demo&&r.name===name&&r.date.startsWith(month));
+    const scheduled=Object.keys(state.schedule).filter(d=>d.startsWith(month)&&state.schedule[d][name]&&state.schedule[d][name]!=='off').length;
+    const present=a.filter(r=>r.status==='Hadir'&&r.in).length;
+    const late=a.filter(r=>r.status==='Hadir'&&r.in&&getLateMinutes(r)>0).length;
+    const lateM=a.reduce((s,r)=>s+getLateMinutes(r),0);
+    const ot=state.overtime.filter(o=>o.demo&&o.name===name&&o.date.startsWith(month)).reduce((s,o)=>s+Number(o.minutes||0),0);
+    const off=Object.keys(state.schedule).filter(d=>d.startsWith(month)&&state.schedule[d][name]==='off').length;
+    const alpha=a.filter(r=>r.status==='Alpha').length,leave=a.filter(r=>r.status==='Izin').length,sick=a.filter(r=>r.status==='Sakit').length;
+    return `${name}: ${scheduled} jadwal · ${present} hadir · telat ${late} hari (${lateM} menit) · lembur ${Math.floor(ot/60)}j ${ot%60}m · libur ${off} · izin ${leave} · sakit ${sick} · alpha ${alpha}`;
+  });
+  const summary=document.getElementById('demoSampleSummary');
+  if(summary)summary.innerHTML='<b>Sample data Oktober 2026</b><br>'+stats.map(x=>escapeHtml(x)).join('<br>')+'<br><span>Data ini simulasi untuk testing, bukan data payroll aktual.</span>';
+  alert('Sample data lengkap Oktober 2026 sudah dimuat. Buka Kalender Jadwal, Status & Lembur, lalu Pendapatan & SP untuk mengecek hasilnya.');
+};
+window.removeDemoRandomData=function(){
+  if(!confirm('Hapus data SIMULASI saja? Data asli di bulan lain tetap aman.'))return;
+  state.attendance=(state.attendance||[]).filter(r=>!r.demo);
+  state.overtime=(state.overtime||[]).filter(o=>!o.demo);
+  state.requests=(state.requests||[]).filter(q=>!q.demo);
+  Object.keys(state.schedule||{}).forEach(d=>{if(d.startsWith('2026-10'))delete state.schedule[d]});
+  save();renderAll();renderMonthly();renderPayrollAdmin();renderRequests();
+  const summary=document.getElementById('demoSampleSummary');if(summary)summary.textContent='Data sample sudah dihapus.';
+};
+// Detailed monthly report with scheduled shifts and days off.
+window.renderMonthly=function(){
+  const month=document.getElementById('recMonth').value||'2026-10';
+  document.getElementById('recMonth').value=month;
+  const rows=state.attendance.filter(r=>r.date.startsWith(month));
+  const counts={Hadir:0,Izin:0,Sakit:0,Alpha:0};
+  rows.forEach(r=>{const s=r.status||(r.in?'Hadir':'');if(counts[s]!==undefined)counts[s]++});
+  const lateRows=rows.filter(r=>r.in&&getLateMinutes(r)>0);
+  const otTotal=state.overtime.filter(o=>o.date.startsWith(month)).reduce((s,o)=>s+Number(o.minutes||0),0);
+  document.getElementById('monthlySummary').textContent=`${month} · ${counts.Hadir} hadir · ${lateRows.length} hari terlambat (${lateRows.reduce((s,r)=>s+getLateMinutes(r),0)} menit) · lembur ${Math.floor(otTotal/60)} jam ${otTotal%60} menit · izin ${counts.Izin} · sakit ${counts.Sakit} · alpha ${counts.Alpha}`;
+  const tbody=document.getElementById('employeeMonthlyRows');
+  tbody.innerHTML=state.employees.map(name=>{
+    const er=rows.filter(r=>r.name===name),present=er.filter(r=>(r.status|| (r.in?'Hadir':''))==='Hadir'&&r.in).length;
+    const late=er.filter(r=>r.in&&getLateMinutes(r)>0),lateMinutes=late.reduce((s,r)=>s+getLateMinutes(r),0);
+    const off=Object.keys(state.schedule).filter(d=>d.startsWith(month)&&state.schedule[d][name]==='off').length;
+    const scheduled=Object.keys(state.schedule).filter(d=>d.startsWith(month)&&state.schedule[d][name]&&state.schedule[d][name]!=='off').length;
+    const izin=er.filter(r=>r.status==='Izin').length,sakit=er.filter(r=>r.status==='Sakit').length,alpha=er.filter(r=>r.status==='Alpha').length;
+    const ot=state.overtime.filter(o=>o.name===name&&o.date.startsWith(month)).reduce((s,o)=>s+Number(o.minutes||0),0);
+    return `<tr><td>${escapeHtml(name)}</td><td>${scheduled}</td><td>${present}</td><td>${late.length}</td><td>${lateMinutes}</td><td>${Math.floor(ot/60)}j ${ot%60}m</td><td>${off}</td><td>${izin}</td><td>${sakit}</td><td>${alpha}</td></tr>`;
+  }).join('');
+  const detail=document.getElementById('monthlyRows');
+  detail.innerHTML=rows.length?rows.slice().sort((a,b)=>(a.date+a.name).localeCompare(b.date+b.name)).map(r=>`<tr><td>${r.date}</td><td>${escapeHtml(r.name)}${r.demo?' · SAMPLE':''}</td><td>${r.status|| (r.in?'Hadir':'-')}</td><td>${r.in||'-'}</td><td>${r.out||'-'}</td><td>${getLateMinutes(r)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada data bulan ini.</td></tr>';
+  const sample=state.attendance.some(r=>r.demo&&r.date.startsWith(month));
+  const summary=document.getElementById('demoSampleSummary');
+  if(sample&&summary&&!summary.innerHTML)summary.textContent='Sample data bulan '+month+' tersedia. Lihat rekap Status & Lembur untuk detail.';
+};
+// Fresh install: preload sample records so the app is not empty. Existing local records are left untouched.
+if(!state.attendance.length&&!Object.keys(state.schedule||{}).length){
+  createDemoRandomData(true);
+}
+</script>
+
+
+<script>
+// Role-based profile UI and prototype access rules.
+let active93Profile=JSON.parse(localStorage.getItem('93space_active_profile')||'null')||{role:'pic',name:'PIC Operasional'};
+let invite93Locked=!!(new URLSearchParams(window.location.search).get('invite')&&new URLSearchParams(window.location.search).get('staff'));
+const picOnlyFunctions=['addEmployee','removeEmployee','saveSettings','saveSchedule','copyNextMonth','clearToday','exportCSV','showGpsSettings','openGoogleMaps','saveGpsSettings','setShopLocation','approveRequest','saveContractRates','saveEmployeeContract','saveFineRates','addViolation','deleteViolation','createDemoRandomData','removeDemoRandomData'];
+function is93PIC(){return active93Profile.role==='pic'}
+function current93Staff(){return active93Profile.name||state.employees[0]||''}
+function require93PIC(){if(!is93PIC()){alert('Fitur ini hanya dapat dilakukan oleh PIC.');return false}return true}
+function set93SelectOptions(id,staffOnly){
+ const el=document.getElementById(id);if(!el)return;
+ const old=el.value;el.innerHTML='';
+ const names=staffOnly?[current93Staff()]:state.employees;
+ names.filter(Boolean).forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;el.appendChild(o)});
+ if(names.includes(old))el.value=old;else if(names.length)el.value=names[0];
+ el.disabled=staffOnly;
+}
+function restrict93EmployeeSelects(){
+ const staffOnly=!is93PIC();
+ ['attEmployee','schedEmployee','reqEmployee','swapFrom','swapTo','otEmployee','contractEmployee','violationEmployee'].forEach(id=>set93SelectOptions(id,staffOnly));
+ if(staffOnly){
+   const sched=document.getElementById('schedEmployee');if(sched)sched.value=current93Staff();
+   const att=document.getElementById('attEmployee');if(att)att.value=current93Staff();
+ }
+ const shiftSelect=document.getElementById('attShift');if(shiftSelect)shiftSelect.disabled=staffOnly;
+}
+function applyProfile(){
+ if(invite93Locked){
+   const name=new URLSearchParams(window.location.search).get('staff')||current93Staff();
+   active93Profile={role:'staff',name};
+   localStorage.setItem('93space_active_profile',JSON.stringify(active93Profile));
+   render93RoleUI();
+   showSection('profile');
+   return;
+ }
+ const role=document.getElementById('profileRole').value;
+ const name=document.getElementById('profileStaff').value||state.employees[0]||'';
+ active93Profile={role,name:role==='pic'?'PIC Operasional':name};
+ localStorage.setItem('93space_active_profile',JSON.stringify(active93Profile));
+ render93RoleUI();
+ showSection('profile');
+}
+function render93RoleUI(){
+ const role=document.getElementById('profileRole'),staff=document.getElementById('profileStaff'),wrap=document.getElementById('profileStaffWrap');
+ if(invite93Locked){
+   const invitedName=new URLSearchParams(window.location.search).get('staff')||active93Profile.name;
+   active93Profile={role:'staff',name:invitedName};
+   if(role){role.value='staff';role.disabled=true;role.style.display='none';const label=role.parentElement&&role.parentElement.querySelector('label');if(label)label.textContent='Role undangan: Staff';}
+   const applyBtn=document.querySelector('#profileAccessCard .actions button');
+   if(applyBtn)applyBtn.textContent='Lanjut sebagai Staff';
+ }else if(role){role.disabled=false;role.style.display='';}
+ if(role)role.value=active93Profile.role;
+ if(staff){const old=staff.value;staff.innerHTML=state.employees.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');staff.value=state.employees.includes(active93Profile.name)?active93Profile.name:(state.employees[0]||'');}
+ if(wrap)wrap.style.display=active93Profile.role==='staff'?'block':'none';
+ const badge=document.getElementById('activeProfileBadge');if(badge)badge.textContent='Profil aktif: '+(is93PIC()?'PIC Operasional':'Staff · '+current93Staff());
+ const navButtons=[...document.querySelectorAll('nav button')];
+ navButtons.forEach(btn=>{
+   const onclick=btn.getAttribute('onclick')||'',match=onclick.match(/showSection\('([^']+)'\)/),id=match&&match[1];
+   btn.style.display=(!is93PIC()&&['settings','payroll'].includes(id))?'none':'';
+   if(id==='profile')btn.textContent=is93PIC()?'Profil PIC':'Profil Saya';
+ });
+ document.getElementById('picProfilePanel').style.display=is93PIC()?'block':'none';
+ document.getElementById('staffProfilePanel').style.display=is93PIC()?'none':'block';
+ // Hide management controls from staff while retaining self-service cards.
+ const hideHeadings=is93PIC()?[]:['Atur jadwal tanggal terpilih','Rekap bulanan','Tukar jadwal','Persetujuan admin','GPS dan radius'];
+ document.querySelectorAll('.card').forEach(card=>{
+   const h=card.querySelector('h2');if(h&&hideHeadings.includes(h.textContent.trim()))card.classList.add('staff-hidden');else card.classList.remove('staff-hidden');
+ });
+ // Hide team-wide attendance actions for staff.
+ document.querySelectorAll('#attendance button[onclick="exportCSV()"],#attendance button[onclick="clearToday()"]').forEach(b=>b.style.display=is93PIC()?'':'none');
+ // Staff cannot see payroll settings or the all-staff payroll section.
+ const payroll=document.getElementById('payroll');if(payroll)payroll.style.display='none';
+ const profileBtn=[...document.querySelectorAll('nav button')].find(b=>(b.getAttribute('onclick')||'').includes("showSection('profile')"));if(profileBtn)profileBtn.style.display='';
+ restrict93EmployeeSelects();
+ renderStaffProfile();
+ const pending=(state.requests||[]).filter(q=>q.status==='Menunggu').length;
+ const picPending=document.getElementById('picPendingCount');if(picPending)picPending.textContent=pending;
+ const picCount=document.getElementById('picStaffCount');if(picCount)picCount.textContent=state.employees.length;
+ const picPresent=document.getElementById('picPresentCount');if(picPresent)picPresent.textContent=(state.attendance||[]).filter(r=>r.date===today()&&r.in).length;
+}
+function renderStaffProfile(){
+ if(is93PIC())return;
+ const name=current93Staff(),monthEl=document.getElementById('staffProfileMonth');if(!monthEl)return;
+ const month=monthEl.value||today().slice(0,7);monthEl.value=month;
+ const records=state.attendance.filter(r=>r.name===name&&r.date.startsWith(month));
+ const present=records.filter(r=>(r.status||(r.in?'Hadir':''))==='Hadir'&&r.in).length;
+ const late=records.filter(r=>r.in&&getLateMinutes(r)>0),lateM=late.reduce((s,r)=>s+getLateMinutes(r),0);
+ const ot=state.overtime.filter(o=>o.name===name&&o.date.startsWith(month)).reduce((s,o)=>s+Number(o.minutes||0),0);
+ const off=Object.keys(state.schedule||{}).filter(d=>d.startsWith(month)&&state.schedule[d][name]==='off').length;
+ const alpha=records.filter(r=>r.status==='Alpha').length;
+ const ct=state.contractRates[state.employeeContracts&&state.employeeContracts[name]||'probation']||{base:0,meal:0,transport:0};
+ const base=present*Number(ct.base||0),benefit=present*(Number(ct.meal||0)+Number(ct.transport||0));
+ const fine=(state.violations||[]).filter(v=>v.name===name&&v.date.startsWith(month)).reduce((s,v)=>s+Number(v.amount||0),0);
+ const put=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
+ put('staffProfileName',name);put('staffPresent',present);put('staffLate',late.length);put('staffLateMinutes',lateM);
+ put('staffOT',Math.floor(ot/60)+'j '+ot%60+'m');put('staffOff',off);put('staffAlpha',alpha);
+ put('staffBasePay',rupiah(base));put('staffBenefits',rupiah(benefit));put('staffFine',rupiah(fine));put('staffNetPay',rupiah(base+benefit-fine));
+ const sched=document.getElementById('staffScheduleList');
+ if(sched){const dates=Object.keys(state.schedule||{}).filter(d=>d.startsWith(month)&&state.schedule[d][name]).sort();sched.innerHTML=dates.length?dates.map(d=>escapeHtml(d+' · '+(state.schedule[d][name]==='off'?'Libur':shiftName(state.schedule[d][name])))).join('<br>'):'Belum ada jadwal untuk bulan ini.'}
+ const tb=document.getElementById('staffAttendanceList');
+ if(tb)tb.innerHTML=records.length?records.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(r=>`<tr><td>${escapeHtml(r.date)}</td><td>${escapeHtml(r.status||(r.in?'Hadir':'-'))}</td><td>${escapeHtml(r.in||'-')}</td><td>${escapeHtml(r.out||'-')}</td><td>${getLateMinutes(r)}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Belum ada riwayat bulan ini.</td></tr>';
+}
+function show93Section(id){
+ if(!is93PIC()&&['settings','payroll'].includes(id)){alert('Menu ini hanya tersedia untuk PIC.');id='profile'}
+ const all=['attendance','schedule','settings','requests','payroll','profile'];
+ all.forEach(x=>{const el=document.getElementById(x);if(el)el.style.display=x===id?'block':'none'});
+ document.querySelectorAll('nav button').forEach(btn=>{
+   const m=(btn.getAttribute('onclick')||'').match(/showSection\('([^']+)'\)/),selected=m&&m[1]===id;
+   btn.classList.toggle('active',!!selected);btn.classList.toggle('secondary',!selected);
+ });
+ if(id==='schedule')renderCalendar();
+ if(id==='requests')renderRequests();
+ if(id==='payroll'&&is93PIC())renderPayroll();
+ if(id==='attendance')renderAttendance();
+ if(id==='profile')renderStaffProfile();
+}
+const prior93ShowSection=showSection;showSection=function(id){show93Section(id)};
+const prior93FillSelects=fillSelects;fillSelects=function(){prior93FillSelects();restrict93EmployeeSelects()};
+const prior93RenderAttendance=renderAttendance;renderAttendance=function(){
+ prior93RenderAttendance();
+ if(!is93PIC()){
+   const name=current93Staff(),records=state.attendance.filter(r=>r.date===today()&&r.name===name);
+   document.getElementById('present').textContent=records.filter(r=>r.in).length;
+   document.getElementById('pending').textContent=records.some(r=>r.in)?0:1;
+   document.getElementById('late').textContent=records.filter(r=>r.in&&getLateMinutes(r)>0).length;
+   const rows=document.querySelectorAll('#attendanceRows tr');rows.forEach(row=>{if(row.cells.length>1&&row.cells[1].textContent.replace(' · SAMPLE','')!==name)row.style.display='none';});
+   const sum=document.getElementById('todaySummary');if(sum)sum.innerHTML=records.length?records.map(r=>escapeHtml(name+' · '+(r.in||'belum check-in')+' · '+(r.out||'belum check-out'))).join('<br>'):'Belum ada absensi hari ini.';
+   const info=document.getElementById('todayLateSummary');if(info)info.textContent=records.filter(r=>r.in&&getLateMinutes(r)>0).length+' kali terlambat hari ini.';
+ }
+ restrict93EmployeeSelects();
+};
+const prior93RenderCalendar=renderCalendar;renderCalendar=function(){
+ prior93RenderCalendar();
+ if(!is93PIC()){
+   document.querySelectorAll('#calendar .day[onclick]').forEach(day=>{
+     const m=(day.getAttribute('onclick')||'').match(/selectDay\('([^']+)'\)/);if(!m)return;
+     const date=m[1],shift=state.schedule[date]&&state.schedule[date][current93Staff()];
+     const box=day.querySelector('.assign');if(box)box.textContent=shift?(shift==='off'?'Libur':shiftName(shift)):'Belum dijadwalkan';
+   });
+ }
+};
+const prior93CheckIn=checkIn;checkIn=function(){
+ if(!is93PIC()){
+   document.getElementById('attEmployee').value=current93Staff();
+   const scheduled=state.schedule[today()]&&state.schedule[today()][current93Staff()];
+   if(!scheduled){alert('Jadwal shift kamu belum diatur oleh PIC untuk hari ini.');return}
+   if(scheduled==='off'){alert('Hari ini jadwal kamu libur. Hubungi PIC jika ada perubahan jadwal.');return}
+   document.getElementById('attShift').value=scheduled;
+ }
+ return prior93CheckIn();
+};
+const prior93CheckOut=checkOut;checkOut=function(){if(!is93PIC())document.getElementById('attEmployee').value=current93Staff();return prior93CheckOut()};
+const prior93SubmitRequest=submitRequest;submitRequest=function(){if(!is93PIC())document.getElementById('reqEmployee').value=current93Staff();return prior93SubmitRequest()};
+const prior93SaveOvertime=saveOvertime;saveOvertime=function(){if(!is93PIC())document.getElementById('otEmployee').value=current93Staff();return prior93SaveOvertime()};
+const prior93RenderRequests=renderRequests;renderRequests=function(){
+ prior93RenderRequests();
+ if(!is93PIC()){
+   document.querySelectorAll('#requests .card').forEach(card=>{
+     const h=card.querySelector('h2');if(h&&['Rekap bulanan','Tukar jadwal','Persetujuan admin','GPS dan radius'].includes(h.textContent.trim()))card.classList.add('staff-hidden');
+   });
+   restrict93EmployeeSelects();
+ }
+};
+const prior93RenderMonthly=renderMonthly;renderMonthly=function(){if(!is93PIC()){renderStaffProfile();return}return prior93RenderMonthly()};
+const prior93RenderPayroll=renderPayroll;renderPayroll=function(){if(!require93PIC())return;return prior93RenderPayroll()};
+const prior93RenderPayrollAdmin=renderPayrollAdmin;renderPayrollAdmin=function(){if(!is93PIC())return;return prior93RenderPayrollAdmin()};
+picOnlyFunctions.forEach(fn=>{
+ const original=window[fn];
+ if(typeof original==='function')window[fn]=function(...args){if(!require93PIC())return;return original.apply(this,args)};
+});
+document.getElementById('profileRole').addEventListener('change',()=>{if(invite93Locked){document.getElementById('profileRole').value='staff';return;}document.getElementById('profileStaffWrap').style.display=document.getElementById('profileRole').value==='staff'?'block':'none'});
+document.getElementById('staffProfileMonth').value=today().slice(0,7);
+render93RoleUI();
+showSection('attendance');
+</script>
+
+
+<script>
+// Staff invitation prototype. Invites are browser-local until backend authentication/database is connected.
+function get93Invites(){try{return JSON.parse(localStorage.getItem('93space_team_invites')||'[]')}catch(e){return []}}
+function save93Invites(items){localStorage.setItem('93space_team_invites',JSON.stringify(items))}
+function render93Invites(){
+ const invites=get93Invites(),picList=document.getElementById('picInviteList'),staffList=document.getElementById('staffInviteList');
+ const sel=document.getElementById('inviteStaffSelect');
+ if(sel){
+   const prior=sel.value;
+   sel.innerHTML=state.employees.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+   if(state.employees.includes(prior))sel.value=prior;
+ }
+ if(picList){
+   picList.innerHTML=invites.length?invites.slice().reverse().map(i=>`<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>${escapeHtml(i.name)}</b> · ${escapeHtml(i.status)}<br><small>Kode undangan: ${escapeHtml(i.code)}</small><br><button onclick="open93InviteWhatsApp('${i.id}')">Kirim via WhatsApp</button> <button class="secondary" onclick="copy93InviteText('${i.id}')">Salin teks undangan</button>${i.status==='Menunggu'?` <button class="secondary" onclick="cancel93Invite('${i.id}')">Batalkan</button>`:''}</div>`).join(''):'Belum ada undangan yang dibuat.';
+ }
+ if(staffList){
+   const mine=invites.filter(i=>i.name===current93Staff());
+   const localCards=mine.length?mine.slice().reverse().map(i=>`<div style="padding:8px 0;border-bottom:1px solid #ddd"><b>93 Space Yogyakarta</b><br>Status: ${escapeHtml(i.status)}<br>Kode: ${escapeHtml(i.code)}${i.status==='Menunggu'?`<br><button onclick="accept93Invite('${i.id}')">Terima undangan</button>`:''}</div>`).join(''):'';
+   const params=new URLSearchParams(window.location.search),linkCode=params.get('invite'),linkName=params.get('staff');
+   const linkCard=linkCode&&linkName&&linkName===current93Staff()?`<div style="padding:10px 0;border-bottom:1px solid #ddd"><b>Undangan Management Team 93 Space</b><br>Undangan untuk: ${escapeHtml(linkName)}<br>Kode: ${escapeHtml(linkCode)}<br><small>Undangan dibuka melalui link WhatsApp.</small><br><button onclick="accept93LinkInvite()">Terima undangan</button></div>`:'';
+   staffList.innerHTML=(linkCard+localCards)||'Belum ada undangan untuk profil staff ini.';
+ }
+}
+function get93InviteLink(invite){
+ const url=new URL(window.location.href);
+ url.search='';url.hash='';
+ url.searchParams.set('invite',invite.code);
+ url.searchParams.set('staff',invite.name);
+ return url.toString();
+}
+function get93InviteText(invite){
+ const link=get93InviteLink(invite);
+ return `Halo ${invite.name},\\n\\nKamu diundang untuk bergabung ke Management Team 93 Space Yogyakarta.\\n\\nKlik link ini untuk membuka undangan dan masuk ke profil Staff:\\n${link}\\n\\nKode undangan: ${invite.code}\\n\\nTerima kasih.`;
+}
+function open93InviteWhatsApp(id){
+ const invite=get93Invites().find(i=>i.id===id);
+ if(!invite)return alert('Undangan tidak ditemukan.');
+ const url='https://wa.me/?text='+encodeURIComponent(get93InviteText(invite));
+ window.open(url,'_blank','noopener,noreferrer');
+}
+async function copy93InviteText(id){
+ const invite=get93Invites().find(i=>i.id===id);
+ if(!invite)return alert('Undangan tidak ditemukan.');
+ const text=get93InviteText(invite);
+ try{
+   if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);}
+   else{
+     const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+     const ok=document.execCommand('copy');ta.remove();if(!ok)throw new Error('copy failed');
+   }
+   alert('Teks undangan berhasil disalin. Kamu bisa menempelkannya di WhatsApp.');
+ }catch(e){
+   prompt('Salin teks undangan berikut:',text);
+ }
+}
+function accept93LinkInvite(){
+ const params=new URLSearchParams(window.location.search),code=params.get('invite'),name=params.get('staff');
+ if(!code||!name||name!==current93Staff())return alert('Link undangan tidak valid untuk profil staff ini.');
+ const invites=get93Invites();
+ let invite=invites.find(i=>i.code===code&&i.name===name);
+ if(!invite){invite={id:'link-'+code,code,name,status:'Menunggu',createdAt:new Date().toISOString(),source:'link'};invites.push(invite);}
+ if(invite.status==='Diterima')return alert('Undangan ini sudah diterima.');
+ invite.status='Diterima';invite.acceptedAt=new Date().toISOString();save93Invites(invites);render93Invites();
+ alert('Undangan berhasil diterima di perangkat ini.');
+}
+function create93StaffInvite(){
+ if(!require93PIC())return;
+ const name=document.getElementById('inviteStaffSelect').value;
+ if(!name)return alert('Pilih nama staff terlebih dahulu.');
+ const invites=get93Invites();
+ if(invites.some(i=>i.name===name&&i.status==='Menunggu'))return alert('Undangan untuk '+name+' masih menunggu respons.');
+ const code='93-'+Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+ invites.push({id:Date.now().toString(36),name,code,status:'Menunggu',createdAt:new Date().toISOString(),team:'93 Space Yogyakarta'});
+ save93Invites(invites);render93Invites();
+ alert('Undangan untuk '+name+' berhasil dibuat. Staff dapat melihatnya di bagian “Undangan Management Team” pada profilnya (prototype lokal).');
+}
+function accept93Invite(id){
+ const invites=get93Invites(),invite=invites.find(i=>i.id===id&&i.name===current93Staff());
+ if(!invite)return alert('Undangan tidak ditemukan untuk profil staff ini.');
+ if(invite.status!=='Menunggu')return alert('Undangan ini sudah diproses.');
+ invite.status='Diterima';invite.acceptedAt=new Date().toISOString();save93Invites(invites);render93Invites();
+ alert('Undangan diterima. '+current93Staff()+' tercatat bergabung ke Management Team 93 Space.');
+}
+function cancel93Invite(id){
+ if(!require93PIC())return;
+ const invites=get93Invites(),invite=invites.find(i=>i.id===id);
+ if(!invite)return;
+ invite.status='Dibatalkan';save93Invites(invites);render93Invites();
+}
+const prior93RenderRoleUIForInvites=render93RoleUI;
+render93RoleUI=function(){prior93RenderRoleUIForInvites();render93Invites()};
+const prior93ApplyProfileForInvites=applyProfile;
+applyProfile=function(){prior93ApplyProfileForInvites();render93Invites()};
+render93Invites();
+</script>
+
+<script>
+(function(){
+ const params=new URLSearchParams(window.location.search),code=params.get('invite'),name=params.get('staff');
+ if(!code||!name)return;
+ invite93Locked=true;
+ const role=document.getElementById('profileRole'),staff=document.getElementById('profileStaff');
+ if(role)role.value='staff';
+ if(staff){
+   let option=[...staff.options].find(o=>o.value===name);
+   if(!option){option=document.createElement('option');option.value=name;option.textContent=name;staff.appendChild(option);}
+   staff.value=name;
+ }
+ active93Profile={role:'staff',name:name};
+ localStorage.setItem('93space_active_profile',JSON.stringify(active93Profile));
+ render93RoleUI();
+ showSection('profile');
+ render93Invites();
+})();
+</script>
+</body>
+</html>
