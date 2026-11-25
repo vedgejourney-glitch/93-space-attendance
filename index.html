@@ -787,16 +787,25 @@ async function copy93InviteText(id){
    prompt('Salin teks undangan berikut:',text);
  }
 }
+
 function accept93LinkInvite(){
- const params=new URLSearchParams(window.location.search),code=params.get('invite'),name=params.get('staff');
- if(!code||!name||name!==current93Staff())return alert('Link undangan tidak valid untuk profil staff ini.');
- const invites=get93Invites();
- let invite=invites.find(i=>i.code===code&&i.name===name);
- if(!invite){invite={id:'link-'+code,code,name,status:'Menunggu',createdAt:new Date().toISOString(),source:'link'};invites.push(invite);}
- if(invite.status==='Diterima')return alert('Undangan ini sudah diterima.');
- invite.status='Diterima';invite.acceptedAt=new Date().toISOString();save93Invites(invites);render93Invites();
- alert('Undangan berhasil diterima di perangkat ini.');
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('invite');
+  const name = params.get('staff');
+
+  if (!code || !name || name !== current93Staff()) {
+    return alert('Link undangan tidak valid untuk profil staff ini.');
+  }
+
+  const backendUrl = 'https://script.google.com/macros/s/AKfycbzno6S0q9YvMdR2mIK5fzuXHlbo8Y14p8mh9ynk1EinfuOQ8KqH0g6cfxK7vmRTx_5y/exec';
+
+  const acceptUrl = backendUrl
+    + '?action=acceptInvite'
+    + '&code=' + encodeURIComponent(code);
+
+  window.location.href = acceptUrl;
 }
+
 function create93StaffInvite(){
  if(!require93PIC())return;
  const name=document.getElementById('inviteStaffSelect').value;
